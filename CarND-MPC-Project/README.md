@@ -1,3 +1,46 @@
+
+# Udacity Self-Driving Car Nanodegree Term 2, Model Predictive Control
+
+## Project Steps
+- Fitting a line based on road waypoints and evaluating the current state based on that polynomial line.
+- Implementing the MPC calculation, including setting variables and constraints
+- Calculating actuator values from the MPC calc based on current state
+- Accounting for latency (I used a predicted state 100ms in the future to replace the actual current state in the calculation)
+- Calculating steering angle & throttle/brake based on the actuator values
+- Setting timestep length and duration
+- Testing/tuning of above implementations on Udacity simulator
+
+## Discussion/Reflection
+
+## The Model
+states are included:
+
+ptsx (x-position of waypoints ahead on the track in global coordinates)
+ptsy (y-position of waypoints ahead on the track in global coordinates)
+px (current x-position of the vehicle's position in global coordinates)
+py (current y-position of the vehicle's position in global coordinates)
+psi (current orientation angle of the vehicle)
+v (current velocity of the vehicle)
+delta (steering angle of the car)
+throttle (current throttle)
+
+## Tuning Timesteps (N) and Timestep Duration (dt)
+Based on the visualization in the track, I found the N value is good between range 10 to 15, as N goes higherm the model starts to slow down, so I choose N = 10,  and I tried differetn dt value from 0.1 to 0.2, at 0.2 for dt it is two slow to react ,so I choose dt = 0.1 in the end with good performance.
+
+## Polynomial Fitting & Preprocessing
+First, I transform the points from the simulator's global coordinates into the vehicle's coordinates.Then, each of the waypoints are adjusted by subtracting out px and py accordingly such that they are based on the vehicle's position. Next, the waypoint coordinates are changed using standard 2d vector transformation equations to be in vehicle coordinates:
+
+ptsx_car[i] = x * cos(-psi) - y * sin(-psi)
+ptsy_car[i] = x * sin(-psi) + y * cos(-psi)
+
+Using the polyfit() function, a third-degree polynomial line is fit to these transformed waypoints, essentially drawing the path the vehicle should try to travel. Moving on further is where the transformations are critical - because we are operating from the vehicle's coordinates, we can use px, py and psi all equal to zero: from the vehicle's standpoint, it is the center of the coordinate system, and it is always pointing to a zero orientation. The cross-track error can then be calculated by evaluating the polynomial function (polyeval()) at px (which in this case is now zero, so technically could also just be calculated as the first coefficient value - i.e. the one with a zero-order x). The psi error, or epsi, which is calculated from the derivative of polynomial fit line, is therefore simpler to calculate, as polynomials above the first order in the original equation are all eliminated through multiplication by zero (since x is zero). It is the negative arc tangent of the second coefficient (the first-order x was in the original polynomial).
+
+##  Latency
+In what was perhaps the most important aspect of this project, my model then accounts for the simulator's added 100ms latency between the actuator calculation (when the model tells the car to perform a steering or acceleration/braking change) and when the simulator will actually perform that action.
+To implement this, I added in a step to predict where the vehicle would be after 100ms (0.1 seconds), in order to take the action that needed to actually be taken at that time, instead of the one in reaction to an old situation. I set the "dt" value here (not to be confused with the one in MPC.cpp, although both are the same value) to equal the latency. Then, using the same update equations as those used in the actual MPC model, I predicted the state and fed that into the true model. Note that these equations were able to be simplified again because of the coordinate system transformation - using x, y and psi all of zero made these equations a little simpler, as lots of the values end up being zero or one. See lines 131-143 in main.cpp. This new predicted state, along with the coefficients, are then fed into the mpc.Solve() function found in MPC.cpp.
+
+# Requirments:
+
 # CarND-Controls-MPC
 Self-Driving Car Engineer Nanodegree Program
 
