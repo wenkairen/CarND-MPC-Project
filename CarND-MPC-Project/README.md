@@ -1,5 +1,6 @@
 
 # Udacity Self-Driving Car Nanodegree Term 2, Model Predictive Control
+![mpc](./imgs/mpc.png)
 
 ## Project Steps
 - Fitting a line based on road waypoints and evaluating the current state based on that polynomial line.
